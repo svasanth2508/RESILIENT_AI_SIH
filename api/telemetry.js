@@ -41,8 +41,11 @@ const numeric = new Set([
   'ml_confidence'
 ]);
 const boolean = new Set(['ldr_detected', 'pir_motion', 'ir_obstacle']);
-const CRITICAL_RISK = 75;
-const ALERT_COOLDOWN_MINUTES = 15;
+
+// Alert Configuration (Risk threshold >= 80%)
+const ALERT_THRESHOLD = Number(process.env.ALERT_THRESHOLD || 80);
+const ALERT_COOLDOWN_MINUTES = Number(process.env.ALERT_COOLDOWN_MINUTES || 15);
+const inMemoryCooldowns = new Map();
 
 function database() {
   if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -81,121 +84,152 @@ function escapeHtml(value) {
 }
 
 async function sendCriticalAlert(db, telemetry, reading) {
-  if (Number(reading.overall_risk) < CRITICAL_RISK) {
-    return { triggered: false, reason: 'risk_below_threshold' };
+  const risk = Number(reading.overall_risk ?? reading.risk_level ?? 0);
+  if (!Number.isFinite(risk) || risk < ALERT_THRESHOLD) {
+    return { triggered: false, reason: 'risk_below_threshold', current_risk: risk, threshold: ALERT_THRESHOLD };
   }
 
   if (!process.env.RESEND_API_KEY || !process.env.ALERT_EMAIL) {
-    console.warn('[Alert] RESEND_API_KEY or ALERT_EMAIL is not configured');
+    console.warn('[Alert] RESEND_API_KEY or ALERT_EMAIL is not configured in environment variables');
     return { triggered: false, reason: 'email_not_configured' };
   }
 
-  const cooldownStarted = new Date(
-    Date.now() - ALERT_COOLDOWN_MINUTES * 60 * 1000
-  ).toISOString();
+  const deviceId = reading.device_id || 'NODE_01';
+  const now = Date.now();
+  const cooldownMs = ALERT_COOLDOWN_MINUTES * 60 * 1000;
+  const cooldownStarted = new Date(now - cooldownMs).toISOString();
 
-  let recentAlert = null;
-  try {
-    const { data, error: lookupError } = await db
-      .from('alert_events')
-      .select('id,created_at')
-      .eq('device_id', reading.device_id)
-      .in('email_status', ['pending', 'sent'])
-      .gte('created_at', cooldownStarted)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+  // 1. Check Cooldown (Supabase alert_events table if available, fallback to in-memory)
+  let isCooldownActive = false;
+  if (db) {
+    try {
+      const { data: recentAlert, error: lookupError } = await db
+        .from('alert_events')
+        .select('id,created_at')
+        .eq('device_id', deviceId)
+        .in('email_status', ['pending', 'sent'])
+        .gte('created_at', cooldownStarted)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-    if (lookupError) throw lookupError;
-    recentAlert = data;
-  } catch (err) {
-    console.warn('[Alert] alert_events lookup failed (ensure alert_events table exists):', err.message);
-    return { triggered: false, reason: 'alert_events_table_missing' };
+      if (!lookupError && recentAlert) {
+        isCooldownActive = true;
+      }
+    } catch {
+      // Table may not exist yet, rely on in-memory cooldown
+    }
   }
 
-  if (recentAlert) {
+  const lastMemoryAlert = inMemoryCooldowns.get(deviceId);
+  if (lastMemoryAlert && (now - lastMemoryAlert) < cooldownMs) {
+    isCooldownActive = true;
+  }
+
+  if (isCooldownActive) {
+    console.log(`[Alert] Cooldown active for ${deviceId}. Next alert allowed after ${ALERT_COOLDOWN_MINUTES} mins.`);
     return { triggered: false, reason: 'cooldown_active' };
   }
 
-  let alertEvent;
-  try {
-    const { data, error: createError } = await db
-      .from('alert_events')
-      .insert({
-        device_id: reading.device_id,
-        telemetry_id: telemetry.id,
-        alert_type: 'CRITICAL',
-        risk: reading.overall_risk,
-        email_status: 'pending'
-      })
-      .select('id')
-      .single();
-
-    if (createError) throw createError;
-    alertEvent = data;
-  } catch (createErr) {
-    console.warn('[Alert] alert_events insert failed:', createErr.message);
-    return { triggered: false, reason: 'alert_events_insert_failed' };
+  // 2. Attempt to log pending alert in DB if table exists (non-blocking)
+  let alertEventId = null;
+  if (db && telemetry?.id) {
+    try {
+      const { data: alertEvent } = await db
+        .from('alert_events')
+        .insert({
+          device_id: deviceId,
+          telemetry_id: telemetry.id,
+          alert_type: 'CRITICAL',
+          risk: risk,
+          email_status: 'pending'
+        })
+        .select('id')
+        .single();
+      if (alertEvent?.id) alertEventId = alertEvent.id;
+    } catch {
+      // Table doesn't exist, proceed to send email regardless
+    }
   }
 
-  const device = escapeHtml(reading.device_id);
-  const risk = Number(reading.overall_risk).toFixed(1);
-  const subject = `CRITICAL ALERT: ${reading.device_id} risk ${risk}%`;
+  // 3. Format Alert Email
+  const device = escapeHtml(deviceId);
+  const formattedRisk = risk.toFixed(1);
+  const subject = `⚠️ CRITICAL ALERT: ${deviceId} Risk Exceeded ${formattedRisk}%`;
+  
+  const recipientList = process.env.ALERT_EMAIL
+    .split(',')
+    .map(e => e.trim())
+    .filter(Boolean);
+
   const html = `
     <div style="font-family:Arial,sans-serif;max-width:620px;margin:auto;color:#162033">
       <div style="background:#b91c1c;color:white;padding:20px;border-radius:12px 12px 0 0">
-        <h1 style="margin:0;font-size:24px">RESILIENT AI — Critical Alert</h1>
+        <h1 style="margin:0;font-size:24px">RESILIENT AI — Critical Hazard Alert</h1>
       </div>
       <div style="border:1px solid #e5e7eb;padding:22px;border-radius:0 0 12px 12px">
-        <p>A critical environmental condition has been detected by <strong>${device}</strong>.</p>
-        <h2 style="color:#b91c1c">Overall risk: ${risk}%</h2>
-        <table style="width:100%;border-collapse:collapse">
-          <tr><td style="padding:7px"><strong>Temperature</strong></td><td>${escapeHtml(reading.temperature ?? 'N/A')} °C</td></tr>
-          <tr><td style="padding:7px"><strong>Humidity</strong></td><td>${escapeHtml(reading.humidity ?? 'N/A')}%</td></tr>
-          <tr><td style="padding:7px"><strong>Gas reading</strong></td><td>${escapeHtml(reading.gas_raw ?? 'N/A')}</td></tr>
-          <tr><td style="padding:7px"><strong>Soil moisture</strong></td><td>${escapeHtml(reading.soil_percent ?? 'N/A')}%</td></tr>
-          <tr><td style="padding:7px"><strong>Water distance</strong></td><td>${escapeHtml(reading.distance_cm ?? 'N/A')} cm</td></tr>
-          <tr><td style="padding:7px"><strong>Fire risk</strong></td><td>${escapeHtml(reading.fire_risk ?? 'N/A')}%</td></tr>
-          <tr><td style="padding:7px"><strong>Flood risk</strong></td><td>${escapeHtml(reading.flood_risk ?? 'N/A')}%</td></tr>
-          <tr><td style="padding:7px"><strong>Intrusion risk</strong></td><td>${escapeHtml(reading.intrusion_risk ?? 'N/A')}%</td></tr>
-          <tr><td style="padding:7px"><strong>Detected at</strong></td><td>${escapeHtml(telemetry.created_at)}</td></tr>
+        <p>A critical hazard condition has been detected by <strong>${device}</strong>.</p>
+        <h2 style="color:#b91c1c;margin:15px 0">Overall Risk: ${formattedRisk}% (Threshold: ${ALERT_THRESHOLD}%)</h2>
+        <table style="width:100%;border-collapse:collapse;margin-top:15px">
+          <tr style="border-bottom:1px solid #f3f4f6"><td style="padding:8px"><strong>Temperature</strong></td><td>${escapeHtml(reading.temperature ?? 'N/A')} °C</td></tr>
+          <tr style="border-bottom:1px solid #f3f4f6"><td style="padding:8px"><strong>Humidity</strong></td><td>${escapeHtml(reading.humidity ?? 'N/A')}%</td></tr>
+          <tr style="border-bottom:1px solid #f3f4f6"><td style="padding:8px"><strong>Gas Density (MQ-2)</strong></td><td>${escapeHtml(reading.gas_raw ?? 'N/A')}</td></tr>
+          <tr style="border-bottom:1px solid #f3f4f6"><td style="padding:8px"><strong>Soil Moisture</strong></td><td>${escapeHtml(reading.soil_percent ?? 'N/A')}%</td></tr>
+          <tr style="border-bottom:1px solid #f3f4f6"><td style="padding:8px"><strong>Object/Water Distance</strong></td><td>${escapeHtml(reading.distance_cm ?? 'N/A')} cm</td></tr>
+          <tr style="border-bottom:1px solid #f3f4f6"><td style="padding:8px"><strong>Fire Hazard Vector</strong></td><td>${escapeHtml(reading.fire_risk ?? 'N/A')}%</td></tr>
+          <tr style="border-bottom:1px solid #f3f4f6"><td style="padding:8px"><strong>Flood Hazard Vector</strong></td><td>${escapeHtml(reading.flood_risk ?? 'N/A')}%</td></tr>
+          <tr style="border-bottom:1px solid #f3f4f6"><td style="padding:8px"><strong>Intrusion Vector</strong></td><td>${escapeHtml(reading.intrusion_risk ?? 'N/A')}%</td></tr>
+          <tr style="border-bottom:1px solid #f3f4f6"><td style="padding:8px"><strong>Edge Anomaly (Z-score)</strong></td><td>${escapeHtml(reading.anomaly_score ?? 'N/A')} σ</td></tr>
+          <tr><td style="padding:8px"><strong>Detected At</strong></td><td>${escapeHtml(telemetry?.created_at || new Date().toISOString())}</td></tr>
         </table>
-        <p style="margin-top:20px"><strong>Immediate inspection is recommended.</strong></p>
+        <p style="margin-top:20px;padding:12px;background:#fef2f2;border-left:4px solid #b91c1c;color:#991b1b">
+          <strong>Action Required:</strong> Immediate physical or remote inspection is recommended.
+        </p>
       </div>
     </div>`;
 
+  // 4. Send Email via Resend API
   try {
+    const fromAddress = process.env.ALERT_FROM || 'RESILIENT AI <onboarding@resend.dev>';
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-        'Content-Type': 'application/json',
-        'Idempotency-Key': `resilient-critical-${telemetry.id}`
+        Authorization: `Bearer ${process.env.RESEND_API_KEY.trim()}`,
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        from: process.env.ALERT_FROM || 'RESILIENT AI <onboarding@resend.dev>',
-        to: [process.env.ALERT_EMAIL],
+        from: fromAddress,
+        to: recipientList,
         subject,
         html
       })
     });
 
     const result = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(result.message || `Resend returned ${response.status}`);
+    if (!response.ok) {
+      throw new Error(result.message || `Resend API returned status ${response.status}`);
+    }
 
-    await db.from('alert_events').update({
-      email_status: 'sent',
-      email_id: result.id || null
-    }).eq('id', alertEvent.id);
+    inMemoryCooldowns.set(deviceId, now);
 
-    return { triggered: true, status: 'sent' };
+    if (db && alertEventId) {
+      await db.from('alert_events').update({
+        email_status: 'sent',
+        email_id: result.id || null
+      }).eq('id', alertEventId).catch(() => {});
+    }
+
+    console.log(`[Alert] Critical email sent successfully to ${recipientList.join(', ')} (ID: ${result.id})`);
+    return { triggered: true, status: 'sent', email_id: result.id, to: recipientList };
   } catch (error) {
-    console.error('[Alert] Email delivery failed:', error);
-    await db.from('alert_events').update({
-      email_status: 'failed',
-      error_message: String(error.message || error).slice(0, 500)
-    }).eq('id', alertEvent.id);
-    return { triggered: true, status: 'failed' };
+    console.error('[Alert] Email delivery failed:', error.message);
+    if (db && alertEventId) {
+      await db.from('alert_events').update({
+        email_status: 'failed',
+        error_message: String(error.message || error).slice(0, 500)
+      }).eq('id', alertEventId).catch(() => {});
+    }
+    return { triggered: true, status: 'failed', error: error.message };
   }
 }
 
@@ -229,7 +263,7 @@ export default async function handler(req, res) {
         alert = await sendCriticalAlert(db, data, row);
       } catch (alertError) {
         console.error('[Alert] Processing failed:', alertError);
-        alert = { triggered: false, reason: 'alert_processing_failed' };
+        alert = { triggered: false, reason: 'alert_processing_failed', error: alertError.message };
       }
       return res.status(201).json({ ok: true, ...data, alert });
     }
