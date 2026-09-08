@@ -59,6 +59,7 @@ function seedMockData() {
       intrusion_risk: intrusionRisk,
       overall_risk: Number(overallRisk.toFixed(1)),
       risk_level: overallRisk >= 75 ? 3 : overallRisk >= 50 ? 2 : overallRisk >= 25 ? 1 : 0,
+      ml_confidence: Math.min(99, Math.round(55 + overallRisk * 0.35 + 0.42 * 2.5)),
       failed_transmissions: 0
     });
   }
@@ -162,6 +163,7 @@ const server = http.createServer(async (req, res) => {
             intrusion_risk: parsed.intrusion_risk ?? 0.0,
             overall_risk: parsed.overall_risk ?? 10.0,
             risk_level: parsed.risk_level ?? 0,
+            ml_confidence: parsed.ml_confidence !== undefined ? Number(parsed.ml_confidence) : undefined,
             failed_transmissions: Number(parsed.failed_transmissions) || 0
           };
           mockTelemetry.push(newRow);

@@ -19,7 +19,8 @@ const fields = [
   'intrusion_risk',
   'overall_risk',
   'risk_level',
-  'failed_transmissions'
+  'failed_transmissions',
+  'ml_confidence'
 ];
 const numeric = new Set([
   'sequence_number',
@@ -36,7 +37,8 @@ const numeric = new Set([
   'intrusion_risk',
   'overall_risk',
   'risk_level',
-  'failed_transmissions'
+  'failed_transmissions',
+  'ml_confidence'
 ]);
 const boolean = new Set(['ldr_detected', 'pir_motion', 'ir_obstacle']);
 const CRITICAL_RISK = 75;

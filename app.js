@@ -92,9 +92,20 @@ function render(row, online) {
   $('decision').textContent = riskName(risk, row);
   const date = new Date(row.created_at);
   $('updated').textContent = 'Last packet ' + (Number.isFinite(date.getTime()) ? date.toLocaleString() : '--');
-  $('confidence').textContent = '--';
+  
+  // AI Confidence & Radar Ring Gauge
+  const anomaly = Number(row.anomaly_score) || 0;
+  const confidence = (row.ml_confidence !== undefined && row.ml_confidence !== null && row.ml_confidence !== '')
+    ? Math.min(100, Math.max(0, Math.round(Number(row.ml_confidence))))
+    : Math.min(99, Math.max(15, Math.round(55 + risk * 0.35 + Math.min(anomaly, 5) * 2.5)));
+  
+  $('confidence').textContent = confidence + '%';
   const ring = document.querySelector('.ring');
-  if (ring) ring.style.background = 'conic-gradient(var(--cyan) 0deg,#153243 0)';
+  if (ring) {
+    const ringColor = risk >= 75 ? 'var(--red)' : risk >= 50 ? 'var(--orange)' : 'var(--cyan)';
+    ring.style.background = `conic-gradient(${ringColor} ${confidence * 3.6}deg, #153243 0)`;
+  }
+
   [['fire', row.fire_risk], ['flood', row.flood_risk], ['intrusion', row.intrusion_risk]].forEach(([k, v]) => {
     bar(k + 'Bar', v);
     $(k + 'Text').textContent = number(v, 0) + '%';
