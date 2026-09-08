@@ -183,6 +183,8 @@ All modules and ESP32 boards must share a common ground.
 
 > **Electrical safety:** The HC-SR04 Echo output is approximately 5 V. It must be reduced to approximately 3.3 V using a voltage divider before connecting it to GPIO 13.
 
+> **Hardware note on GPIO 12:** GPIO 12 (`MTDI`) is an ESP32 strapping pin that sets flash voltage at power-up. Ensure GPIO 12 is LOW or not pulled HIGH externally during boot, or route TRIG to another non-strapping pin (such as GPIO 14) if bootlooping occurs.
+
 > Check the MQ-2 module’s analog-output voltage. Do not apply more than 3.3 V to an ESP32 ADC pin.
 
 ---
@@ -376,33 +378,44 @@ firmware/
 
 ## Cloud Configuration
 
-The Vercel project requires the following protected environment variables:
+The Vercel project requires the following environment variables:
 
 ```text
 SUPABASE_URL
 SUPABASE_SERVICE_ROLE_KEY
 DEVICE_API_KEY
+RESEND_API_KEY      (optional, for critical email alerts)
+ALERT_EMAIL         (optional, recipient email address)
+ALERT_FROM          (optional, sender header e.g. "RESILIENT AI <alerts@domain.com>")
 ```
 
 Never commit the real values to GitHub.
 
-The `.env.example` file must contain placeholders only.
+The `.env.example` file contains placeholders for all supported variables.
 
 ---
 
 ## Supabase Database
 
+### 1. `telemetry` Table
 The `telemetry` table stores:
+* Sensor readings (`temperature`, `humidity`, `gas_raw`, `soil_raw`, `soil_percent`, `distance_cm`)
+* Edge-AI results (`anomaly_score`, `fire_risk`, `flood_risk`, `intrusion_risk`, `overall_risk`, `risk_level`)
+* Detection states (`ldr_detected`, `pir_motion`, `ir_obstacle`)
+* Device identity & sequence (`device_id`, `sequence_number`, `device_uptime_ms`, `failed_transmissions`)
+* Server-generated timestamps (`created_at`)
 
-* Sensor readings
-* Edge-AI results
-* Risk vectors
-* Detection states
-* Device identity
-* Packet sequence
-* Device uptime
-* Transmission failures
-* Server-generated timestamps
+### 2. `alert_events` Table (Optional / For Critical Email Alerts)
+The `alert_events` table stores critical hazard notifications:
+* `id` (bigint / uuid, primary key)
+* `created_at` (timestamptz, default now())
+* `device_id` (text)
+* `telemetry_id` (bigint / uuid)
+* `alert_type` (text, e.g. 'CRITICAL')
+* `risk` (numeric)
+* `email_status` (text, e.g. 'pending', 'sent', 'failed')
+* `email_id` (text)
+* `error_message` (text)
 
 Row Level Security is enabled. Database writes are performed through the protected server-side Vercel API.
 

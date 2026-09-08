@@ -1,1 +1,17 @@
-{"name":"resilient-ai-sih","version":"1.0.0","private":true,"type":"module","scripts":{"dev":"vercel dev"},"dependencies":{"@supabase/supabase-js":"^2.57.4"},"devDependencies":{"vercel":"^48.0.0"}}
+{
+  "name": "resilient-ai-sih",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "vercel-dev": "vercel dev"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.57.4"
+  },
+  "devDependencies": {
+    "vercel": "^48.0.0"
+  }
+}

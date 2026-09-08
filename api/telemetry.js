@@ -1,23 +1,72 @@
 import { createClient } from '@supabase/supabase-js';
 
-const fields = ['device_id','sequence_number','device_uptime_ms','temperature','humidity','gas_raw','soil_raw','soil_percent','ldr_detected','pir_motion','ir_obstacle','distance_cm','anomaly_score','fire_risk','flood_risk','intrusion_risk','overall_risk','risk_level','failed_transmissions'];
-const numeric = new Set(['sequence_number','device_uptime_ms','temperature','humidity','gas_raw','soil_raw','soil_percent','distance_cm','anomaly_score','fire_risk','flood_risk','intrusion_risk','overall_risk','risk_level','failed_transmissions']);
-const boolean = new Set(['ldr_detected','pir_motion','ir_obstacle']);
+const fields = [
+  'device_id',
+  'sequence_number',
+  'device_uptime_ms',
+  'temperature',
+  'humidity',
+  'gas_raw',
+  'soil_raw',
+  'soil_percent',
+  'ldr_detected',
+  'pir_motion',
+  'ir_obstacle',
+  'distance_cm',
+  'anomaly_score',
+  'fire_risk',
+  'flood_risk',
+  'intrusion_risk',
+  'overall_risk',
+  'risk_level',
+  'failed_transmissions'
+];
+const numeric = new Set([
+  'sequence_number',
+  'device_uptime_ms',
+  'temperature',
+  'humidity',
+  'gas_raw',
+  'soil_raw',
+  'soil_percent',
+  'distance_cm',
+  'anomaly_score',
+  'fire_risk',
+  'flood_risk',
+  'intrusion_risk',
+  'overall_risk',
+  'risk_level',
+  'failed_transmissions'
+]);
+const boolean = new Set(['ldr_detected', 'pir_motion', 'ir_obstacle']);
 const CRITICAL_RISK = 75;
 const ALERT_COOLDOWN_MINUTES = 15;
 
 function database() {
-  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) throw new Error('Server database configuration is missing');
-  return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error('Server database configuration is missing');
+  }
+  return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, {
+    auth: { persistSession: false }
+  });
 }
 
 function clean(body) {
   const row = {};
   for (const key of fields) {
     if (!(key in body)) continue;
-    if (numeric.has(key)) { const value = Number(body[key]); if (Number.isFinite(value)) row[key] = value; }
-    else if (boolean.has(key)) row[key] = Boolean(body[key]);
-    else row[key] = String(body[key]).slice(0, 40);
+    if (numeric.has(key)) {
+      const val = body[key];
+      if (val !== null && val !== undefined && val !== '') {
+        const value = Number(val);
+        if (Number.isFinite(value)) row[key] = value;
+      }
+    } else if (boolean.has(key)) {
+      const val = body[key];
+      row[key] = val === true || val === 1 || val === '1' || val === 'true';
+    } else if (body[key] !== null && body[key] !== undefined) {
+      row[key] = String(body[key]).slice(0, 40);
+    }
   }
   row.device_id ||= 'NODE_01';
   return row;
@@ -35,7 +84,7 @@ async function sendCriticalAlert(db, telemetry, reading) {
   }
 
   if (!process.env.RESEND_API_KEY || !process.env.ALERT_EMAIL) {
-    console.error('[Alert] RESEND_API_KEY or ALERT_EMAIL is missing');
+    console.warn('[Alert] RESEND_API_KEY or ALERT_EMAIL is not configured');
     return { triggered: false, reason: 'email_not_configured' };
   }
 
@@ -43,34 +92,49 @@ async function sendCriticalAlert(db, telemetry, reading) {
     Date.now() - ALERT_COOLDOWN_MINUTES * 60 * 1000
   ).toISOString();
 
-  const { data: recentAlert, error: lookupError } = await db
-    .from('alert_events')
-    .select('id,created_at')
-    .eq('device_id', reading.device_id)
-    .in('email_status', ['pending', 'sent'])
-    .gte('created_at', cooldownStarted)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  let recentAlert = null;
+  try {
+    const { data, error: lookupError } = await db
+      .from('alert_events')
+      .select('id,created_at')
+      .eq('device_id', reading.device_id)
+      .in('email_status', ['pending', 'sent'])
+      .gte('created_at', cooldownStarted)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-  if (lookupError) throw lookupError;
+    if (lookupError) throw lookupError;
+    recentAlert = data;
+  } catch (err) {
+    console.warn('[Alert] alert_events lookup failed (ensure alert_events table exists):', err.message);
+    return { triggered: false, reason: 'alert_events_table_missing' };
+  }
+
   if (recentAlert) {
     return { triggered: false, reason: 'cooldown_active' };
   }
 
-  const { data: alertEvent, error: createError } = await db
-    .from('alert_events')
-    .insert({
-      device_id: reading.device_id,
-      telemetry_id: telemetry.id,
-      alert_type: 'CRITICAL',
-      risk: reading.overall_risk,
-      email_status: 'pending'
-    })
-    .select('id')
-    .single();
+  let alertEvent;
+  try {
+    const { data, error: createError } = await db
+      .from('alert_events')
+      .insert({
+        device_id: reading.device_id,
+        telemetry_id: telemetry.id,
+        alert_type: 'CRITICAL',
+        risk: reading.overall_risk,
+        email_status: 'pending'
+      })
+      .select('id')
+      .single();
 
-  if (createError) throw createError;
+    if (createError) throw createError;
+    alertEvent = data;
+  } catch (createErr) {
+    console.warn('[Alert] alert_events insert failed:', createErr.message);
+    return { triggered: false, reason: 'alert_events_insert_failed' };
+  }
 
   const device = escapeHtml(reading.device_id);
   const risk = Number(reading.overall_risk).toFixed(1);
@@ -136,12 +200,28 @@ async function sendCriticalAlert(db, telemetry, reading) {
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   try {
-    const db = database();
     if (req.method === 'POST') {
-      if (!process.env.DEVICE_API_KEY || req.headers['x-device-key'] !== process.env.DEVICE_API_KEY) return res.status(401).json({ ok: false, error: 'Unauthorized device' });
-      const row = clean(typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {}));
+      if (!process.env.DEVICE_API_KEY || req.headers['x-device-key'] !== process.env.DEVICE_API_KEY) {
+        return res.status(401).json({ ok: false, error: 'Unauthorized device' });
+      }
+
+      let parsedBody = req.body;
+      if (typeof parsedBody === 'string') {
+        try {
+          parsedBody = JSON.parse(parsedBody);
+        } catch {
+          return res.status(400).json({ ok: false, error: 'Invalid JSON in request body' });
+        }
+      }
+      if (!parsedBody || typeof parsedBody !== 'object') {
+        return res.status(400).json({ ok: false, error: 'Request body must be an object' });
+      }
+
+      const db = database();
+      const row = clean(parsedBody);
       const { data, error } = await db.from('telemetry').insert(row).select('id,created_at').single();
       if (error) throw error;
+
       let alert;
       try {
         alert = await sendCriticalAlert(db, data, row);
@@ -151,16 +231,19 @@ export default async function handler(req, res) {
       }
       return res.status(201).json({ ok: true, ...data, alert });
     }
+
     if (req.method === 'GET') {
-      const limit = Math.min(Math.max(Number(req.query.limit) || 60, 1), 300);
+      const limit = Math.min(Math.max(Number(req.query?.limit) || 60, 1), 300);
+      const db = database();
       const { data, error } = await db.from('telemetry').select('*').order('created_at', { ascending: false }).limit(limit);
       if (error) throw error;
       return res.status(200).json({ ok: true, rows: data || [] });
     }
+
     res.setHeader('Allow', 'GET, POST');
     return res.status(405).json({ ok: false, error: 'Method not allowed' });
   } catch (error) {
-    console.error(error);
+    console.error('[API Error]:', error);
     return res.status(500).json({ ok: false, error: 'Telemetry service unavailable' });
   }
 }
