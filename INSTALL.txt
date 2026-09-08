@@ -1,0 +1,39 @@
+RESILIENT AI — DASHBOARD NAVIGATION FIX
+
+Cause: the sidebar had anchor labels without hrefs or click handlers, and only
+the Overview content existed. This update adds Environment, Intelligence and
+Node health views, hash navigation, active links and mobile navigation.
+
+Replace these files at the ROOT of svasanth2508/RESILIENT_AI_SIH:
+  index.html
+  app.js
+  styles.css
+Add this new file at the same level:
+  navigation.js
+
+GitHub website:
+1. Open your repository, select the main branch.
+2. Select Add file > Upload files.
+3. Drag the FOUR files above from the extracted ZIP. Do not upload the ZIP or
+   the containing folder. Do not upload this INSTALL.txt.
+4. Review the changes and commit with: Fix dashboard navigation.
+5. If Vercel is connected to main, wait for that deployment to show Ready.
+6. Open the dashboard and press Ctrl+Shift+R.
+7. Click all four sidebar links. Refresh on Environment, try browser Back,
+   and confirm the selected page remains selected as telemetry refreshes.
+
+No API, database, firmware, email settings or environment variables are included
+or changed. The pages use the existing /api/telemetry response.
+
+Intelligence presents existing RULE scores. ML confidence was previously derived
+from a formula in app.js, not received from your models; that invented confidence
+display is replaced by 'ML not reported'. Actual ML predictions remain unavailable
+on the dashboard until the telemetry protocol/API is extended separately.
+
+Node health shows freshness of cloud telemetry and reported failed transmissions.
+It cannot independently diagnose Node A and Node 2 without separate health reports.
+The existing NODE OFFLINE badge is a data freshness issue, separate from navigation.
+
+This patch was prepared against the main-branch files fetched September 8, 2026.
+If those files have since changed, compare before overwriting.
+The GitHub connector denied branch creation (403), so no live deployment was changed.
