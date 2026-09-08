@@ -59,7 +59,7 @@ function seedMockData() {
       intrusion_risk: intrusionRisk,
       overall_risk: Number(overallRisk.toFixed(1)),
       risk_level: overallRisk >= 75 ? 3 : overallRisk >= 50 ? 2 : overallRisk >= 25 ? 1 : 0,
-      ml_confidence: Math.min(99, Math.round(55 + overallRisk * 0.35 + 0.42 * 2.5)),
+      ml_confidence: Math.min(99, Math.max(5, Math.round(overallRisk * 0.75 + 0.42 * 4.0))),
       failed_transmissions: 0
     });
   }

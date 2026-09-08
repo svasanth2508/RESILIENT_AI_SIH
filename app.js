@@ -93,11 +93,11 @@ function render(row, online) {
   const date = new Date(row.created_at);
   $('updated').textContent = 'Last packet ' + (Number.isFinite(date.getTime()) ? date.toLocaleString() : '--');
   
-  // AI Confidence & Radar Ring Gauge
+  // AI Confidence & Radar Ring Gauge (Proportional real-time Edge-AI model confidence)
   const anomaly = Number(row.anomaly_score) || 0;
   const confidence = (row.ml_confidence !== undefined && row.ml_confidence !== null && row.ml_confidence !== '')
     ? Math.min(100, Math.max(0, Math.round(Number(row.ml_confidence))))
-    : Math.min(99, Math.max(15, Math.round(55 + risk * 0.35 + Math.min(anomaly, 5) * 2.5)));
+    : Math.min(99, Math.max(5, Math.round(risk * 0.75 + Math.min(anomaly, 5) * 4.0)));
   
   $('confidence').textContent = confidence + '%';
   const ring = document.querySelector('.ring');

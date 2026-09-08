@@ -158,7 +158,7 @@
 
     const confidence = (row.ml_confidence !== undefined && row.ml_confidence !== null && row.ml_confidence !== '')
       ? Math.min(100, Math.max(0, Math.round(Number(row.ml_confidence))))
-      : Math.min(99, Math.max(15, Math.round(55 + overallRisk * 0.35 + Math.min(anomaly, 5) * 2.5)));
+      : Math.min(99, Math.max(5, Math.round(overallRisk * 0.75 + Math.min(anomaly, 5) * 4.0)));
 
     // Fire Model
     text('ml-fire-score', `${fireRisk}%`);
