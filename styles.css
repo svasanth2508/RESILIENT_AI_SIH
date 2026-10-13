@@ -14,7 +14,7 @@ body[data-theme="sage"]{--bg:#f4f4ec;--surface:#fffef8;--surface-2:#e8ebdf;--lin
 @media(max-width:390px){.risk-hero-main{align-items:flex-start}.risk-donut{width:76px;height:76px}.donut-inner{width:57px;height:57px}.donut-inner strong{font-size:15px}.risk-number strong{font-size:45px}.sensor-value strong{font-size:21px}.sensor-card small{font-size:8px}.topbar-actions{gap:5px}.connection-pill{padding:6px}.icon-button{width:31px;height:31px}.page-heading h1{font-size:25px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
 body {
-  background-image: url("./assets/resqsphere-background.png");
+  background-image: url("api/a_clean_modern_pastel_tech_themed_ui_background.png");
   background-size: cover;
   background-position: center;
   background-attachment: fixed;
