@@ -1,8 +1,172 @@
-<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#07101d"><title>Resilient AI | Environmental Command Center</title><link rel="stylesheet" href="/styles.css?v=2.2"></head><body>
-<div class="shell"><aside><div class="logo"><span>R</span><div>RESILIENT <b>AI</b><small>SIH COMMAND SYSTEM</small></div></div><nav><a href="#overview" class="active">◈ Overview</a><a href="#environment">⌁ Environment</a><a href="#intelligence">△ Intelligence</a><a href="#node-health">◎ Node health</a></nav><div class="side-status"><i></i><div><b>Cloud link</b><small id="cloud">Connecting…</small></div></div></aside>
-<main><header><div><p>ENVIRONMENTAL INTELLIGENCE NETWORK</p><h1>Live Operations</h1></div><div class="head-right"><span id="clock">--:--:--</span><strong id="nodeBadge" class="offline">NODE OFFLINE</strong></div></header>
-<section id="empty" class="empty"><div class="pulse"></div><h2>Awaiting first telemetry packet</h2><p>The dashboard is deployed correctly. Node 2 has not uploaded sensor data yet.</p></section>
-<section id="content" hidden><div class="risk-panel"><div><p>COMPOSITE RISK INDEX</p><div class="risk-row"><strong id="risk">0</strong><span>/100</span></div><h2 id="decision">Environment stable</h2><small id="updated">Waiting for update</small></div><div class="radar"><div class="ring"><div><b id="confidence">0%</b><span id="confidenceLabel">AI Confidence</span></div></div></div></div>
-<div class="metrics"><article><label>Temperature</label><b id="temperature">-- °C</b><small>Thermal channel</small></article><article><label>Humidity</label><b id="humidity">--%</b><small>Atmospheric channel</small></article><article><label>Gas density</label><b id="gas">--</b><small>MQ-2 raw ADC</small></article><article><label>Soil moisture</label><b id="soil">--%</b><small>Ground saturation</small></article><article><label>Object distance</label><b id="distance">-- cm</b><small>Ultrasonic ranging</small></article><article><label>Edge anomaly</label><b id="anomaly">--</b><small>Adaptive Z-vector</small></article></div>
-<div class="lower"><section class="chart-card"><div class="title"><div><p>RISK EVOLUTION</p><h3>Live hazard trajectory</h3></div><div class="legend"><i class="c1"></i>Fire <i class="c2"></i>Flood <i class="c3"></i>Intrusion</div></div><canvas id="chart"></canvas></section><section class="threat-card"><p>THREAT FUSION</p><h3>Current vectors</h3><div class="vector"><span>Fire</span><b id="fireText">0%</b><div><i id="fireBar"></i></div></div><div class="vector"><span>Flood</span><b id="floodText">0%</b><div><i id="floodBar"></i></div></div><div class="vector"><span>Intrusion</span><b id="intrusionText">0%</b><div><i id="intrusionBar"></i></div></div><div class="detections"><span id="pir">PIR CLEAR</span><span id="ir">IR CLEAR</span><span id="ldr">LIGHT CLEAR</span></div></section></div>
-<footer><span id="device">Device: --</span><span id="packet">Packet: --</span><span id="failures">Transmission failures: --</span></footer></section></main></div><script src="/navigation.js?v=2.2"></script><script src="/app.js?v=2.2"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#f7f5f0">
+  <meta name="description" content="SCIENCE EXPO environmental telemetry and hazard monitoring command dashboard">
+  <title>Fieldwise | Science Expo Command</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css?v=3.0">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar">
+    <a class="brand" href="#overview" aria-label="Fieldwise home">
+      <span class="brand-mark"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M20 4 34 12v16L20 36 6 28V12Z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 23h5l3-9 4 13 3-7h2" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      <span class="brand-copy"><strong>FIELDWISE<span> / EXPO</span></strong><small>ENVIRONMENTAL INTELLIGENCE</small></span>
+    </a>
+    <div class="workspace"><span class="workspace-dot"></span><span><small>WORKSPACE</small><strong>Science Expo Lab</strong></span><span class="workspace-chevron">⌄</span></div>
+    <nav class="primary-nav" aria-label="Main navigation">
+      <p class="nav-label">MONITOR</p>
+      <button class="nav-item active" data-page="overview"><span class="nav-icon">◫</span><span>Command overview</span><span class="nav-arrow">↗</span></button>
+      <button class="nav-item" data-page="environment"><span class="nav-icon">◌</span><span>Environment</span></button>
+      <button class="nav-item" data-page="intelligence"><span class="nav-icon">✳</span><span>Risk intelligence</span></button>
+      <button class="nav-item" data-page="history"><span class="nav-icon">▤</span><span>Telemetry history</span></button>
+      <p class="nav-label nav-label-spaced">SYSTEM</p>
+      <button class="nav-item" data-page="health"><span class="nav-icon">⌁</span><span>Node health</span></button>
+      <button class="nav-item" data-page="settings"><span class="nav-icon">⚙</span><span>Preferences</span></button>
+    </nav>
+    <div class="sidebar-bottom">
+      <div class="help-card"><span class="help-spark">✦</span><strong>Field note</strong><p>Keep sensor nodes powered and on the same ESP-NOW channel for continuous telemetry.</p><button id="openChecklist" class="text-action">Open setup checklist <span>→</span></button></div>
+      <div class="profile-row"><div class="avatar">SE</div><div><strong>Science Expo</strong><small>Field operator</small></div><span class="profile-more">•••</span></div>
+    </div>
+  </aside>
+
+  <main class="main-area">
+    <header class="topbar">
+      <div class="mobile-brand"><button class="icon-button mobile-menu" id="mobileMenu" aria-label="Open navigation">☰</button><span>FIELDWISE <b>/ EXPO</b></span></div>
+      <div class="breadcrumb"><span>Science Expo</span><span class="crumb-slash">/</span><strong id="breadcrumbCurrent">Command overview</strong></div>
+      <div class="topbar-actions">
+        <div class="connection-pill"><span class="status-dot" id="cloudDot"></span><span id="cloudLabel">Connecting to cloud</span></div>
+        <button class="icon-button" id="refreshButton" aria-label="Refresh telemetry" title="Refresh now">↻</button>
+        <button class="icon-button" id="themeButton" aria-label="Switch color theme" title="Switch theme">◐</button>
+        <div class="top-date" id="currentDate">---</div>
+      </div>
+    </header>
+
+    <div class="page-content">
+      <section class="page active" id="page-overview">
+        <div class="page-heading">
+          <div><div class="eyebrow"><span class="eyebrow-line"></span> LIVE FIELD INTELLIGENCE <span class="live-tag"><i></i> LIVE</span></div><h1>Good day, <em>Field Operator.</em></h1><p class="subtitle">A clear view of your environment, connected devices, and emerging risk signals.</p></div>
+          <div class="heading-actions"><button class="button button-secondary" id="exportOverview">↓ Export report</button><button class="button button-primary" id="openIncidentLog">View event log <span>↗</span></button></div>
+        </div>
+        <div class="hero-grid">
+          <article class="risk-hero panel">
+            <div class="risk-hero-top"><div><span class="card-kicker">COMPOSITE RISK INDEX</span><span class="risk-info" title="Reported by Node 1's current baseline threshold logic">i</span></div><span class="status-chip chip-neutral" id="riskChip">AWAITING DATA</span></div>
+            <div class="risk-hero-main"><div><div class="risk-number"><strong id="riskValue">--</strong><span>/100</span></div><h2 id="riskHeadline">Waiting for telemetry</h2><p id="riskDescription">The latest field packet will appear here when Node 2 uploads data.</p></div>
+              <div class="risk-donut" id="riskDonut" role="img" aria-label="Composite risk gauge"><div class="donut-inner"><strong id="riskDonutValue">--</strong><span>risk score</span></div></div>
+            </div>
+            <div class="risk-hero-bottom"><span><i class="legend-dot dot-coral"></i> Fire <b id="miniFire">--%</b></span><span><i class="legend-dot dot-blue"></i> Flood <b id="miniFlood">--%</b></span><span><i class="legend-dot dot-purple"></i> Intrusion <b id="miniIntrusion">--%</b></span><span class="updated-text" id="lastUpdated">Last packet —</span></div>
+          </article>
+          <article class="field-status panel">
+            <div class="panel-heading"><div><span class="card-kicker">FIELD STATUS</span><h3>Network at a glance</h3></div><span class="decor-icon">⌁</span></div>
+            <div class="field-status-body"><div class="network-orbit"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><div class="orbit-node node-one">N1</div><div class="orbit-node node-two">N2</div><div class="orbit-node node-cloud">☁</div><div class="orbit-center">✳</div></div>
+              <div class="network-details"><div><span class="network-bullet green"></span><span>Sensor node</span><strong id="node1State">Waiting</strong></div><div><span class="network-bullet blue"></span><span>Gateway</span><strong id="node2State">Waiting</strong></div><div><span class="network-bullet gold"></span><span>Cloud API</span><strong id="apiState">Connecting</strong></div></div>
+            </div>
+            <div class="field-status-foot"><span id="deviceName">Device: —</span><span class="soft-divider"></span><span id="packetNumber">Packet #—</span></div>
+          </article>
+        </div>
+
+        <div class="section-head"><div><span class="section-kicker">SENSOR SNAPSHOT</span><h2>Environmental telemetry</h2></div><button class="inline-link" data-goto="environment">Explore all sensors <span>→</span></button></div>
+        <div class="sensor-grid">
+          <article class="sensor-card panel"><div class="sensor-card-top"><span class="sensor-icon temp-icon">☼</span><span class="trend-label" id="tempTrend">LIVE</span></div><p>Temperature</p><div class="sensor-value"><strong id="temperature">--</strong><span>°C</span></div><div class="sparkline spark-coral"><svg viewBox="0 0 150 30" preserveAspectRatio="none"><path id="tempSpark" d="M0 20 L20 18 L40 21 L60 10 L80 14 L100 8 L120 13 L150 5"/></svg></div><small id="temperatureFoot">DHT11 · ambient air</small></article>
+          <article class="sensor-card panel"><div class="sensor-card-top"><span class="sensor-icon humidity-icon">◒</span><span class="trend-label" id="humidityTrend">LIVE</span></div><p>Relative humidity</p><div class="sensor-value"><strong id="humidity">--</strong><span>%</span></div><div class="meter"><i id="humidityMeter"></i></div><small>Atmospheric moisture</small></article>
+          <article class="sensor-card panel"><div class="sensor-card-top"><span class="sensor-icon gas-icon">⌁</span><span class="trend-label">RAW ADC</span></div><p>Gas sensor signal</p><div class="sensor-value"><strong id="gas">--</strong><span>/4095</span></div><div class="meter meter-orange"><i id="gasMeter"></i></div><small>MQ-2 · not calibrated ppm</small></article>
+          <article class="sensor-card panel"><div class="sensor-card-top"><span class="sensor-icon soil-icon">❋</span><span class="trend-label">ESTIMATE</span></div><p>Soil moisture</p><div class="sensor-value"><strong id="soil">--</strong><span>%</span></div><div class="meter meter-green"><i id="soilMeter"></i></div><small>Probe estimate · calibrate dry/wet</small></article>
+        </div>
+
+        <div class="content-grid">
+          <article class="panel chart-panel"><div class="panel-heading"><div><span class="card-kicker">SIGNAL HISTORY</span><h3>Risk pattern over time</h3><p class="panel-subtitle">Recent uploaded packets · 0–100 scale</p></div><div class="chart-actions"><button class="segmented active" data-window="all">All</button><button class="segmented" data-window="20">20 pts</button><button class="segmented" data-window="10">10 pts</button></div></div><div class="chart-legend"><span><i class="legend-dot dot-coral"></i>Fire</span><span><i class="legend-dot dot-blue"></i>Flood</span><span><i class="legend-dot dot-purple"></i>Intrusion</span></div><div class="chart-wrap"><canvas id="riskChart" aria-label="Risk history line chart"></canvas><div id="chartEmpty" class="chart-empty">Chart will populate when telemetry arrives.</div></div><div class="chart-footer"><span id="chartRange">No packets loaded</span><span class="chart-live"><i></i> Auto-refresh every 3 sec</span></div></article>
+          <article class="panel threat-panel"><div class="panel-heading"><div><span class="card-kicker">THREAT FUSION</span><h3>Risk vectors</h3></div><button class="round-link" data-goto="intelligence" aria-label="Open risk intelligence">↗</button></div>
+            <div class="threat-row"><div class="threat-label"><span class="threat-mark fire-mark">✦</span><span>Fire pattern</span><strong id="fireValue">--%</strong></div><div class="progress-track"><i id="fireBar" class="bar-fire"></i></div><small id="fireCaption">Awaiting gas signal</small></div>
+            <div class="threat-row"><div class="threat-label"><span class="threat-mark flood-mark">≈</span><span>Flood pattern</span><strong id="floodValue">--%</strong></div><div class="progress-track"><i id="floodBar" class="bar-flood"></i></div><small id="floodCaption">Awaiting moisture signal</small></div>
+            <div class="threat-row"><div class="threat-label"><span class="threat-mark intrusion-mark">⌖</span><span>Intrusion pattern</span><strong id="intrusionValue">--%</strong></div><div class="progress-track"><i id="intrusionBar" class="bar-intrusion"></i></div><small id="intrusionCaption">Awaiting perimeter signal</small></div>
+            <div class="threat-foot"><span>Reported risk estimates</span><span class="not-model">Baseline rules</span></div>
+          </article>
+        </div>
+
+        <div class="section-head"><div><span class="section-kicker">LATEST EVENTS</span><h2>Field activity</h2></div><button class="inline-link" data-goto="history">Open telemetry history <span>→</span></button></div>
+        <article class="panel event-table-panel"><div class="table-wrap"><table><thead><tr><th>PACKET</th><th>TIME RECEIVED</th><th>DEVICE</th><th>RISK</th><th>SENSOR EVENTS</th><th>STATUS</th></tr></thead><tbody id="recentRows"><tr><td colspan="6" class="empty-cell">Waiting for the first cloud telemetry packet…</td></tr></tbody></table></div></article>
+        <div class="data-disclaimer">Sensor values and hazard scores are prototype telemetry. Do not use as a certified fire, flood, or security alarm.</div>
+      </section>
+
+      <section class="page" id="page-environment">
+        <div class="page-heading"><div><div class="eyebrow"><span class="eyebrow-line"></span> SENSOR LAB</div><h1>Environment <em>monitor</em></h1><p class="subtitle">Inspect the raw signals coming from your ESP32 sensor node.</p></div><div class="heading-actions"><button class="button button-secondary" id="exportEnvironment">↓ Export sensor data</button><button class="button button-primary" id="environmentRefresh">↻ Refresh readings</button></div></div>
+        <div class="environment-banner panel"><div class="environment-banner-icon">⌁</div><div><span class="card-kicker">LATEST TELEMETRY</span><h2 id="envHeadline">Awaiting sensor data</h2><p id="envSummary">Once the gateway uploads a packet, each sensor reading and its status will appear here.</p></div><div class="banner-time"><small>LAST RECEIVED</small><strong id="envLastTime">—</strong></div></div>
+        <div class="sensor-detail-grid">
+          <article class="panel detail-sensor"><div class="detail-sensor-head"><span class="sensor-icon temp-icon">☼</span><span class="sensor-state" id="dhtState">NO DATA</span></div><span class="card-kicker">DHT11 / AMBIENT</span><h3>Temperature</h3><div class="detail-number"><strong id="envTemperature">—</strong><span>°C</span></div><div class="detail-scale"><span>Cool</span><span>Warm</span><span>Hot</span></div><div class="scale-track"><i id="temperatureScale"></i></div><p class="detail-note">A value of −1 indicates an invalid DHT reading from the node.</p></article>
+          <article class="panel detail-sensor"><div class="detail-sensor-head"><span class="sensor-icon humidity-icon">◒</span><span class="sensor-state" id="humidityState">NO DATA</span></div><span class="card-kicker">DHT11 / AIR</span><h3>Relative humidity</h3><div class="detail-number"><strong id="envHumidity">—</strong><span>%</span></div><div class="scale-track"><i id="humidityScale"></i></div><p class="detail-note">Relative humidity percentage reported by the DHT11.</p></article>
+          <article class="panel detail-sensor"><div class="detail-sensor-head"><span class="sensor-icon gas-icon">⌁</span><span class="sensor-state" id="gasState">NO DATA</span></div><span class="card-kicker">MQ-2 / ANALOG</span><h3>Gas sensor signal</h3><div class="detail-number"><strong id="envGas">—</strong><span>/4095</span></div><div class="scale-track scale-orange"><i id="gasScale"></i></div><p class="detail-note">Raw ADC only. This is not a calibrated gas concentration or confirmed fire measurement.</p></article>
+          <article class="panel detail-sensor"><div class="detail-sensor-head"><span class="sensor-icon soil-icon">❋</span><span class="sensor-state" id="soilState">NO DATA</span></div><span class="card-kicker">SOIL / ANALOG</span><h3>Soil moisture</h3><div class="detail-number"><strong id="envSoil">—</strong><span>%</span></div><div class="scale-track scale-green"><i id="soilScale"></i></div><p class="detail-note">Estimated from ADC endpoints in firmware; calibrate for your exact probe.</p></article>
+          <article class="panel detail-sensor"><div class="detail-sensor-head"><span class="sensor-icon distance-icon">⌖</span><span class="sensor-state" id="distanceState">NO DATA</span></div><span class="card-kicker">ULTRASONIC / RANGE</span><h3>Object distance</h3><div class="detail-number"><strong id="envDistance">—</strong><span>cm</span></div><div class="scale-track scale-purple"><i id="distanceScale"></i></div><p class="detail-note">−1 from the firmware means no valid echo was received.</p></article>
+          <article class="panel detail-sensor"><div class="detail-sensor-head"><span class="sensor-icon signal-icon">⌁</span><span class="sensor-state" id="anomalyState">NO DATA</span></div><span class="card-kicker">EDGE / BASELINE</span><h3>Anomaly score</h3><div class="detail-number"><strong id="envAnomaly">—</strong><span>score</span></div><div class="scale-track scale-purple"><i id="anomalyScale"></i></div><p class="detail-note">This prototype sends the overall risk value as its anomaly score; it is not a statistical Z-score.</p></article>
+        </div>
+        <article class="panel events-panel"><div class="panel-heading"><div><span class="card-kicker">DIGITAL INPUTS</span><h3>Sensor event states</h3><p class="panel-subtitle">GPIO readings received in the latest packet</p></div><span class="status-chip chip-neutral" id="digitalSummary">AWAITING DATA</span></div><div class="digital-grid">
+          <div class="digital-item"><div class="digital-symbol ldr-symbol">☼</div><div><strong>Light sensor</strong><small>Digital input · GPIO 32</small></div><span id="envLdrState" class="digital-state">—</span></div>
+          <div class="digital-item"><div class="digital-symbol pir-symbol">⌁</div><div><strong>PIR motion</strong><small>Motion input · GPIO 33</small></div><span id="envPirState" class="digital-state">—</span></div>
+          <div class="digital-item"><div class="digital-symbol ir-symbol">⌖</div><div><strong>IR obstacle</strong><small>Obstacle input · GPIO 25</small></div><span id="envIrState" class="digital-state">—</span></div>
+        </div></article>
+      </section>
+
+      <section class="page" id="page-intelligence">
+        <div class="page-heading"><div><div class="eyebrow"><span class="eyebrow-line"></span> RISK & EXPLAINABILITY</div><h1>Risk <em>intelligence</em></h1><p class="subtitle">Understand which sensor vector is driving the current reported risk score.</p></div><div class="heading-actions"><button class="button button-secondary" id="exportRisk">↓ Export risk report</button></div></div>
+        <div class="intelligence-overview">
+          <article class="panel intelligence-score"><span class="card-kicker">OVERALL RISK INDEX</span><div class="intel-score-row"><strong id="intelOverall">—</strong><span>/100</span><span id="intelBadge" class="status-chip chip-neutral">NO DATA</span></div><h2 id="intelDecision">Awaiting telemetry</h2><p id="intelDecisionText">The risk engine will explain the dominant signal when data is received.</p><div class="intel-meta"><span>Device <b id="intelDevice">—</b></span><span>Sequence <b id="intelSequence">—</b></span></div></article>
+          <article class="panel dominant-card"><span class="card-kicker">DOMINANT RISK VECTOR</span><div class="dominant-illustration" id="dominantIcon">✳</div><h2 id="dominantTitle">No dominant signal</h2><p id="dominantDescription">Waiting for fire, flood and intrusion scores.</p><div class="dominant-values"><span>Fire <b id="domFire">—</b></span><span>Flood <b id="domFlood">—</b></span><span>Intrusion <b id="domIntrusion">—</b></span></div></article>
+        </div>
+        <div class="section-head"><div><span class="section-kicker">FUSION VECTORS</span><h2>Hazard breakdown</h2></div><span class="small-note">Scores reported by Node 1</span></div>
+        <div class="vector-detail-grid">
+          <article class="panel vector-detail fire-detail"><div class="vector-detail-head"><span class="threat-mark fire-mark">✦</span><span class="status-chip chip-neutral" id="intelFireChip">NO DATA</span></div><h3>Fire / gas signal</h3><div class="vector-big"><strong id="intelFire">—</strong><span>%</span></div><div class="progress-track large"><i id="intelFireBar" class="bar-fire"></i></div><p id="intelFireText">Uses the firmware's raw gas ADC-derived baseline estimate.</p></article>
+          <article class="panel vector-detail flood-detail"><div class="vector-detail-head"><span class="threat-mark flood-mark">≈</span><span class="status-chip chip-neutral" id="intelFloodChip">NO DATA</span></div><h3>Flood / soil signal</h3><div class="vector-big"><strong id="intelFlood">—</strong><span>%</span></div><div class="progress-track large"><i id="intelFloodBar" class="bar-flood"></i></div><p id="intelFloodText">Uses estimated soil moisture as a proxy, not water-level detection.</p></article>
+          <article class="panel vector-detail intrusion-detail"><div class="vector-detail-head"><span class="threat-mark intrusion-mark">⌖</span><span class="status-chip chip-neutral" id="intelIntrusionChip">NO DATA</span></div><h3>Intrusion / motion</h3><div class="vector-big"><strong id="intelIntrusion">—</strong><span>%</span></div><div class="progress-track large"><i id="intelIntrusionBar" class="bar-intrusion"></i></div><p id="intelIntrusionText">Uses PIR and IR digital event inputs.</p></article>
+        </div>
+        <article class="panel explain-panel"><div class="explain-badge">✳</div><div><span class="card-kicker">DECISION EXPLANATION</span><h3 id="explainTitle">Waiting for a field packet</h3><p id="explainText">No decision has been generated yet.</p><div class="explain-foot"><span>Method <b>Threshold-based sensor fusion</b></span><span>Model type <b>Prototype baseline rules</b></span></div></div></article>
+        <div class="data-disclaimer">Important: these are baseline threshold estimates from the supplied firmware, not outputs from a trained model or a certified hazard detector.</div>
+      </section>
+
+      <section class="page" id="page-history">
+        <div class="page-heading"><div><div class="eyebrow"><span class="eyebrow-line"></span> PACKET ARCHIVE</div><h1>Telemetry <em>history</em></h1><p class="subtitle">Search, inspect, and export the most recent telemetry packets stored in the cloud.</p></div><div class="heading-actions"><button class="button button-secondary" id="exportHistory">↓ Export CSV</button><button class="button button-primary" id="historyRefresh">↻ Refresh</button></div></div>
+        <article class="panel history-summary"><div><span class="summary-label">PACKETS LOADED</span><strong id="historyCount">0</strong><small>Latest API response</small></div><div><span class="summary-label">LATEST SEQUENCE</span><strong id="historySequence">—</strong><small>From device packet</small></div><div><span class="summary-label">CURRENT STATUS</span><strong id="historyStatus">Waiting</strong><small>Based on last packet age</small></div><div><span class="summary-label">REFRESH RATE</span><strong>3 sec</strong><small>Automatic polling</small></div></article>
+        <article class="panel history-table-panel"><div class="history-toolbar"><div class="search-box"><span>⌕</span><input id="historySearch" type="search" placeholder="Search device, sequence, risk…" aria-label="Search telemetry history"></div><div class="history-filters"><select id="riskFilter" aria-label="Filter by risk level"><option value="all">All risk levels</option><option value="normal">Normal · under 25</option><option value="moderate">Moderate · 25–49</option><option value="high">High · 50–74</option><option value="critical">Critical · 75+</option></select><select id="historyLimit" aria-label="Rows to display"><option value="10">10 rows</option><option value="20" selected>20 rows</option><option value="60">60 rows</option></select></div></div><div class="table-wrap"><table><thead><tr><th>SEQUENCE</th><th>RECEIVED AT</th><th>DEVICE</th><th>TEMP</th><th>HUMIDITY</th><th>GAS ADC</th><th>SOIL</th><th>OVERALL RISK</th><th>LEVEL</th></tr></thead><tbody id="historyRows"><tr><td colspan="9" class="empty-cell">Loading telemetry history…</td></tr></tbody></table></div><div class="table-bottom"><span id="historyShowing">Showing 0 packets</span><button class="inline-link" id="clearHistorySearch">Clear filters ↺</button></div></article>
+        <p class="small-note history-note">The table shows records returned by your existing API. It does not create or store new telemetry itself.</p>
+      </section>
+
+      <section class="page" id="page-health">
+        <div class="page-heading"><div><div class="eyebrow"><span class="eyebrow-line"></span> CONNECTIVITY & DIAGNOSTICS</div><h1>Node <em>health</em></h1><p class="subtitle">Check the path from the sensor packet to the cloud dashboard.</p></div><div class="heading-actions"><button class="button button-primary" id="healthRefresh">Run connection check ↻</button></div></div>
+        <div class="health-banner panel"><div class="health-pulse" id="healthPulse">⌁</div><div><span class="card-kicker">CLOUD TELEMETRY STATUS</span><h2 id="healthHeadline">Checking connection…</h2><p id="healthDescription">Attempting to reach the telemetry API.</p></div><span id="healthStatusChip" class="status-chip chip-neutral">CHECKING</span></div>
+        <div class="health-grid">
+          <article class="panel health-card"><div class="health-card-top"><span class="health-icon icon-mint">⌁</span><span class="status-chip chip-neutral" id="sensorNodeChip">UNKNOWN</span></div><span class="card-kicker">NODE 1</span><h3>Sensor transmitter</h3><p>Reads DHT11, MQ-2, soil, LDR, PIR, IR and ultrasonic sensors.</p><div class="health-detail"><span>Latest device ID</span><strong id="healthDevice">—</strong></div><div class="health-detail"><span>Sequence number</span><strong id="healthSequence">—</strong></div><div class="health-detail"><span>Device uptime</span><strong id="healthUptime">—</strong></div></article>
+          <article class="panel health-card"><div class="health-card-top"><span class="health-icon icon-blue">⇢</span><span class="status-chip chip-neutral" id="gatewayChip">NOT VERIFIED</span></div><span class="card-kicker">NODE 2</span><h3>ESP-NOW gateway</h3><p>Receives telemetry, acknowledges Node 1, and posts data to the API.</p><div class="health-detail"><span>Gateway status</span><strong id="gatewayStatus">Not separately reported</strong></div><div class="health-detail"><span>Reported send failures</span><strong id="healthFailures">—</strong></div><div class="health-detail"><span>Cloud route</span><strong id="gatewayRoute">/api/telemetry</strong></div></article>
+          <article class="panel health-card"><div class="health-card-top"><span class="health-icon icon-lilac">☁</span><span class="status-chip chip-neutral" id="cloudHealthChip">CHECKING</span></div><span class="card-kicker">CLOUD API</span><h3>Telemetry service</h3><p>Fetches recent records from your existing Vercel API endpoint.</p><div class="health-detail"><span>API response</span><strong id="apiResponse">—</strong></div><div class="health-detail"><span>Last successful fetch</span><strong id="apiLastSuccess">—</strong></div><div class="health-detail"><span>Polling interval</span><strong>3 seconds</strong></div></article>
+        </div>
+        <article class="panel checklist-panel"><div class="panel-heading"><div><span class="card-kicker">FIELD TROUBLESHOOTING</span><h3>Bring the network online</h3><p class="panel-subtitle">Tick each item as you verify it. Your checklist stays in this page until you reload.</p></div><span class="checklist-progress" id="checklistProgress">0 / 5 complete</span></div><div class="checklist" id="checklist">
+          <label class="checklist-item"><input type="checkbox"><span class="custom-check">✓</span><span><strong>Node 1 powered and transmitting</strong><small>Serial Monitor shows sensor values and “ESP-NOW send queued.”</small></span></label>
+          <label class="checklist-item"><input type="checkbox"><span class="custom-check">✓</span><span><strong>Node 2 receives Node 1 packets</strong><small>Gateway Serial Monitor shows a valid telemetry packet and ACK.</small></span></label>
+          <label class="checklist-item"><input type="checkbox"><span class="custom-check">✓</span><span><strong>Both ESP-NOW nodes use the same channel</strong><small>Node 1 and Node 2 must agree on channel 11.</small></span></label>
+          <label class="checklist-item"><input type="checkbox"><span class="custom-check">✓</span><span><strong>Node 2 Wi-Fi and API key are configured</strong><small>Use your own Wi-Fi credentials and matching device API key.</small></span></label>
+          <label class="checklist-item"><input type="checkbox"><span class="custom-check">✓</span><span><strong>Cloud API returns telemetry rows</strong><small>Vercel environment variables and Supabase table permissions are valid.</small></span></label>
+        </div></article>
+      </section>
+
+      <section class="page" id="page-settings">
+        <div class="page-heading"><div><div class="eyebrow"><span class="eyebrow-line"></span> PERSONAL WORKSPACE</div><h1>Dashboard <em>preferences</em></h1><p class="subtitle">Tune the way this browser presents and refreshes your field data.</p></div><div class="heading-actions"><button class="button button-secondary" id="resetSettings">Reset preferences</button><button class="button button-primary" id="saveSettings">Save preferences ✓</button></div></div>
+        <div class="settings-layout"><div class="settings-main">
+          <article class="panel settings-card"><span class="card-kicker">APPEARANCE</span><h3>Color palette</h3><p>Choose a readable workspace palette. This changes the dashboard theme only.</p><div class="theme-options"><button class="theme-option selected" data-theme="light"><span class="theme-swatch swatch-clay"></span><strong>Studio clay</strong><small>Warm ivory · plum · coral</small><i>✓</i></button><button class="theme-option" data-theme="sage"><span class="theme-swatch swatch-sage"></span><strong>Botanical</strong><small>Sage · cream · forest</small><i>✓</i></button><button class="theme-option" data-theme="blue"><span class="theme-swatch swatch-blue"></span><strong>Coastal</strong><small>Sky · porcelain · cobalt</small><i>✓</i></button></div></article>
+          <article class="panel settings-card"><span class="card-kicker">LIVE UPDATES</span><h3>Refresh behaviour</h3><p>Choose how often the browser asks the API for the latest records.</p><div class="setting-row"><div><strong>Automatic refresh</strong><small>Poll telemetry in the background while this page is open.</small></div><label class="switch"><input type="checkbox" id="autoRefreshToggle" checked><span></span></label></div><div class="setting-row"><div><strong>Refresh interval</strong><small>Shorter intervals make more API requests.</small></div><select id="refreshInterval"><option value="3">3 seconds</option><option value="5">5 seconds</option><option value="10">10 seconds</option><option value="15">15 seconds</option></select></div></article>
+          <article class="panel settings-card"><span class="card-kicker">DATA & PRIVACY</span><h3>Browser actions</h3><div class="setting-row"><div><strong>Export telemetry</strong><small>Download the currently loaded API records as CSV.</small></div><button class="button button-secondary button-small" id="settingsExport">Export CSV ↓</button></div><div class="setting-row"><div><strong>Clear local chart history</strong><small>Clears only the chart points in this browser session; it does not delete cloud data.</small></div><button class="button button-danger button-small" id="clearChart">Clear chart</button></div></article>
+        </div><aside class="panel settings-aside"><div class="settings-aside-icon">✳</div><h3>Built for the field</h3><p>Preferences affect this browser's presentation. Device credentials and cloud secrets must remain in your device/backend configuration, never in dashboard HTML.</p><div class="aside-line"></div><div class="aside-meta"><span>Data source</span><strong>/api/telemetry</strong></div><div class="aside-meta"><span>Current refresh</span><strong id="settingsCurrentRefresh">3 seconds</strong></div><div class="aside-meta"><span>Theme</span><strong id="settingsCurrentTheme">Studio clay</strong></div></aside></div>
+      </section>
+
+      <footer class="app-footer"><span>FIELDWISE <b>/ SCIENCE EXPO</b></span><span>Prototype monitoring interface · <span id="footerUpdated">Waiting for data</span></span><button id="footerHelp" class="inline-link">Setup help ↗</button></footer>
+    </div>
+  </main>
+</div>
+
+<div class="toast-region" id="toastRegion" aria-live="polite"></div>
+<div class="modal-backdrop" id="modalBackdrop" hidden><section class="modal panel" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><div class="modal-top"><div><span class="card-kicker">FIELDWISE ASSIST</span><h2 id="modalTitle">Setup checklist</h2></div><button class="icon-button" id="closeModal" aria-label="Close dialog">×</button></div><div id="modalBody" class="modal-body"></div><div class="modal-actions"><button class="button button-secondary" id="modalCancel">Close</button><button class="button button-primary" id="modalConfirm">Go to node health ↗</button></div></section></div>
+<script src="/app.js?v=3.0"></script>
+</body>
+</html>
