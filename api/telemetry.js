@@ -1,46 +1,75 @@
 import { createClient } from '@supabase/supabase-js';
 
+// Fields accepted from Node 2 and stored in Supabase.
 const fields = [
   'device_id',
   'sequence_number',
   'device_uptime_ms',
+
   'temperature',
   'humidity',
+
   'gas_raw',
   'soil_raw',
   'soil_percent',
+
+  'rain_raw_percent',
+  'rain_detected',
+  'flame_detected',
+
   'ldr_detected',
   'pir_motion',
   'ir_obstacle',
+
   'distance_cm',
+
   'anomaly_score',
   'fire_risk',
   'flood_risk',
   'intrusion_risk',
   'overall_risk',
   'risk_level',
+
   'failed_transmissions',
   'ml_confidence'
 ];
+
+// Numeric fields
 const numeric = new Set([
   'sequence_number',
   'device_uptime_ms',
+
   'temperature',
   'humidity',
+
   'gas_raw',
   'soil_raw',
   'soil_percent',
+
+  'rain_raw_percent',
+
   'distance_cm',
+
   'anomaly_score',
   'fire_risk',
   'flood_risk',
   'intrusion_risk',
   'overall_risk',
   'risk_level',
+
   'failed_transmissions',
   'ml_confidence'
 ]);
-const boolean = new Set(['ldr_detected', 'pir_motion', 'ir_obstacle']);
+
+// Boolean fields
+const boolean = new Set([
+  'rain_detected',
+  'flame_detected',
+
+  'ldr_detected',
+  'pir_motion',
+  'ir_obstacle'
+]);
 
 // Alert Configuration (Risk threshold >= 80%)
 const ALERT_THRESHOLD = Number(process.env.ALERT_THRESHOLD || 80);
