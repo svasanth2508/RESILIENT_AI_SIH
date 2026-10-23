@@ -75,6 +75,52 @@
           <article class="sensor-card panel"><div class="sensor-card-top"><span class="sensor-icon temp-icon">☼</span><span class="trend-label" id="tempTrend">LIVE</span></div><p>Temperature</p><div class="sensor-value"><strong id="temperature">--</strong><span>°C</span></div><div class="sparkline spark-coral"><svg viewBox="0 0 150 30" preserveAspectRatio="none"><path id="tempSpark" d="M0 20 L20 18 L40 21 L60 10 L80 14 L100 8 L120 13 L150 5"/></svg></div><small id="temperatureFoot">DHT11 · ambient air</small></article>
           <article class="sensor-card panel"><div class="sensor-card-top"><span class="sensor-icon humidity-icon">◒</span><span class="trend-label" id="humidityTrend">LIVE</span></div><p>Relative humidity</p><div class="sensor-value"><strong id="humidity">--</strong><span>%</span></div><div class="meter"><i id="humidityMeter"></i></div><small>Atmospheric moisture</small></article>
           <article class="sensor-card panel"><div class="sensor-card-top"><span class="sensor-icon gas-icon">⌁</span><span class="trend-label">RAW ADC</span></div><p>Gas sensor signal</p><div class="sensor-value"><strong id="gas">--</strong><span>/4095</span></div><div class="meter meter-orange"><i id="gasMeter"></i></div><small>MQ-2 · not calibrated ppm</small></article>
+          <!-- FLAME SENSOR -->
+<article class="panel detail-sensor">
+  <div class="detail-sensor-head">
+    <span class="sensor-icon gas-icon">♨</span>
+    <span class="sensor-state" id="flameState">NO DATA</span>
+  </div>
+
+  <span class="card-kicker">FLAME SENSOR / DIGITAL</span>
+  <h3>Flame detection</h3>
+
+  <div class="detail-number">
+    <strong id="envFlameState">—</strong>
+  </div>
+
+  <div class="scale-track scale-orange">
+    <i id="flameScale"></i>
+  </div>
+
+  <p class="detail-note">
+    Digital flame sensor status received from Node 1.
+  </p>
+</article>
+
+<!-- RAIN SENSOR -->
+<article class="panel detail-sensor">
+  <div class="detail-sensor-head">
+    <span class="sensor-icon humidity-icon">☂</span>
+    <span class="sensor-state" id="rainState">NO DATA</span>
+  </div>
+
+  <span class="card-kicker">RAIN SENSOR / ANALOG</span>
+  <h3>Rain wetness</h3>
+
+  <div class="detail-number">
+    <strong id="envRain">—</strong>
+    <span>%</span>
+  </div>
+
+  <div class="scale-track scale-blue">
+    <i id="rainScale"></i>
+  </div>
+
+  <p class="detail-note">
+    Wetness percentage reported by Node 1. Calibrate the sensor for your module.
+  </p>
+</article>
           <article class="sensor-card panel"><div class="sensor-card-top"><span class="sensor-icon soil-icon">❋</span><span class="trend-label">ESTIMATE</span></div><p>Soil moisture</p><div class="sensor-value"><strong id="soil">--</strong><span>%</span></div><div class="meter meter-green"><i id="soilMeter"></i></div><small>Probe estimate · calibrate dry/wet</small></article>
         </div>
 
