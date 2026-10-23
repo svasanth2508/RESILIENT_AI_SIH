@@ -88,6 +88,54 @@
     setText('envHeadline',`Latest packet #${safe(row.sequence_number)}`);
     setText('envSummary',`Received from ${safe(row.device_id)}. Values below are the readings stored in the latest API record.`);
     setText('envLastTime',stamp(row.created_at));
+    // Rain sensor
+const rainPercent = Number(row.rain_raw_percent);
+const rainValid =
+  row.rain_raw_percent !== null &&
+  row.rain_raw_percent !== undefined &&
+  row.rain_raw_percent !== '' &&
+  Number.isFinite(rainPercent);
+
+setText(
+  'envRain',
+  rainValid ? `${Math.round(Math.max(0, Math.min(100, rainPercent)))}%` : '—'
+);
+
+setWidth('rainScale', rainValid ? rainPercent : 0);
+
+const rainDetected = row.rain_detected === true || Number(row.rain_detected) === 1;
+
+setText(
+  'rainState',
+  rainDetected ? 'RAIN DETECTED' : rainValid ? 'NO RAIN' : 'NO DATA'
+);
+
+// Flame sensor
+const flameDetected = row.flame_detected === true || Number(row.flame_detected) === 1;
+
+setText(
+  'envFlameState',
+  flameDetected ? 'FLAME DETECTED' : 'NO FLAME'
+);
+
+setText(
+  'flameState',
+  flameDetected ? 'DETECTED' : 'CLEAR'
+);
+
+setWidth('flameScale', flameDetected ? 100 : 0);
+
+const rainStatusElement = $('rainState');
+if (rainStatusElement) {
+  rainStatusElement.className =
+    `sensor-state ${rainDetected ? 'warn' : rainValid ? 'good' : ''}`;
+}
+
+const flameStatusElement = $('flameState');
+if (flameStatusElement) {
+  flameStatusElement.className =
+    `sensor-state ${flameDetected ? 'warn' : 'good'}`;
+}
     setText('envTemperature',temp<0?'Unavailable':number(temp));setText('envHumidity',hum<0?'Unavailable':number(hum));
     setText('envGas',valid(gas)?number(gas,0):'—');setText('envSoil',valid(soil)?number(soil,0):'—');
     setText('envDistance',dist<0?'No echo':number(dist));setText('envAnomaly',valid(anom)?number(anom,2):'—');
